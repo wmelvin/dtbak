@@ -1,5 +1,8 @@
 use std::fs;
+#[cfg(unix)]
 use std::os::unix::fs as unix_fs;
+#[cfg(windows)]
+use std::os::windows::fs as windows_fs;
 use std::process::Command;
 use tempfile::TempDir;
 
@@ -78,7 +81,10 @@ fn test_symlink_to_directory_shows_error() {
     fs::create_dir(&dir_path).expect("Failed to create directory");
 
     // Create a symlink to the directory
+    #[cfg(unix)]
     unix_fs::symlink(&dir_path, &link_path).expect("Failed to create symlink");
+    #[cfg(windows)]
+    windows_fs::symlink_dir(&dir_path, &link_path).expect("Failed to create symlink");
 
     let output = Command::new(env!("CARGO_BIN_EXE_dtbak"))
         .arg(&link_path)
