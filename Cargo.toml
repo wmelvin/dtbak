@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 time = { version = "0.3", features = ["local-offset", "formatting", "macros"] }
 dirs = "5.0"
+
+[dev-dependencies]
+tempfile = "3.8"
