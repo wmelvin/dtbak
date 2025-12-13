@@ -1,8 +1,6 @@
 use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs as unix_fs;
-#[cfg(windows)]
-use std::os::windows::fs as windows_fs;
 use std::process::Command;
 use tempfile::TempDir;
 
