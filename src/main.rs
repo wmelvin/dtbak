@@ -141,9 +141,11 @@ fn create_backup_path(original_path: &Path, datetime_string: &str) -> PathBuf {
     
     let backup_name = format!("{}.{}.bak", file_name, datetime_string);
     
-    if let Some(parent) = original_path.parent() {
-        parent.join(backup_name)
+    let parent = original_path.parent().unwrap_or(Path::new("."));
+    let bak_dir = parent.join("_0_bak");
+    if bak_dir.is_dir() {
+        bak_dir.join(backup_name)
     } else {
-        PathBuf::from(backup_name)
+        parent.join(backup_name)
     }
 }

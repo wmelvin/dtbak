@@ -9,6 +9,7 @@ A simple command-line utility for creating timestamped backup copies of files on
 - Handles relative paths and `~/` home directory expansion
 - Prevents accidental overwrites (fails if backup already exists)
 - Cross-platform support (Linux and Windows)
+- Automatically writes backups into a `_0_bak` subdirectory when one exists
 
 ## Usage
 
@@ -53,6 +54,19 @@ The backup file name is created by appending a timestamp and `.bak` extension to
 
 - `test.txt` → `test.txt.20251213_090807.bak`
 - `document.pdf` → `document.pdf.20251213_143022.bak`
+
+## Backup Destination
+
+By default the backup is written to the same directory as the original file.
+
+If a directory named `_0_bak` exists **in the same directory as the file being backed up**, the backup is written there instead. The `_0_bak` directory is never created automatically — it must already exist.
+
+```
+my-project/
+├── notes.txt
+└── _0_bak/          ← exists → backups go here
+    └── notes.txt.20261015_103000.bak
+```
 
 ## Building
 

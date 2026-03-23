@@ -162,3 +162,88 @@ fn test_valid_file_creates_backup() {
     assert!(timestamp_part.chars().nth(8) == Some('_'), 
         "Character at position 8 should be an underscore");
 }
+
+#[test]
+fn test_backup_written_to_0_bak_directory_when_it_exists() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let file_path = temp_dir.path().join("test.txt");
+    let bak_dir = temp_dir.path().join("_0_bak");
+    let file_content = "Content to back up";
+
+    fs::write(&file_path, file_content).expect("Failed to create test file");
+    fs::create_dir(&bak_dir).expect("Failed to create _0_bak directory");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dtbak"))
+        .arg(&file_path)
+        .output()
+        .expect("Failed to execute dtbak");
+
+    assert!(output.status.success(),
+        "Should exit successfully. stderr: {}",
+        String::from_utf8_lossy(&output.stderr));
+
+    // Backup must be inside _0_bak, not in the parent directory
+    let backup_files_in_bak: Vec<_> = fs::read_dir(&bak_dir)
+        .expect("Failed to read _0_bak directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let s = name.to_string_lossy();
+            s.starts_with("test.txt.") && s.ends_with(".bak")
+        })
+        .collect();
+
+    assert_eq!(backup_files_in_bak.len(), 1,
+        "Should have created exactly one backup file inside _0_bak");
+
+    let backup_content = fs::read_to_string(backup_files_in_bak[0].path())
+        .expect("Failed to read backup file");
+    assert_eq!(backup_content, file_content,
+        "Backup file content should match the original");
+
+    // Confirm no stray backup in the parent directory
+    let backup_files_in_parent: Vec<_> = fs::read_dir(temp_dir.path())
+        .expect("Failed to read parent directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let s = name.to_string_lossy();
+            s.starts_with("test.txt.") && s.ends_with(".bak")
+        })
+        .collect();
+
+    assert_eq!(backup_files_in_parent.len(), 0,
+        "Should not have created a backup in the parent directory when _0_bak exists");
+}
+
+#[test]
+fn test_backup_written_to_parent_directory_when_0_bak_does_not_exist() {
+    let temp_dir = TempDir::new().expect("Failed to create temp directory");
+    let file_path = temp_dir.path().join("test.txt");
+    let file_content = "Content to back up";
+
+    fs::write(&file_path, file_content).expect("Failed to create test file");
+    // Deliberately do NOT create _0_bak
+
+    let output = Command::new(env!("CARGO_BIN_EXE_dtbak"))
+        .arg(&file_path)
+        .output()
+        .expect("Failed to execute dtbak");
+
+    assert!(output.status.success(),
+        "Should exit successfully. stderr: {}",
+        String::from_utf8_lossy(&output.stderr));
+
+    let backup_files: Vec<_> = fs::read_dir(temp_dir.path())
+        .expect("Failed to read directory")
+        .filter_map(|e| e.ok())
+        .filter(|e| {
+            let name = e.file_name();
+            let s = name.to_string_lossy();
+            s.starts_with("test.txt.") && s.ends_with(".bak")
+        })
+        .collect();
+
+    assert_eq!(backup_files.len(), 1,
+        "Should have created exactly one backup file in the parent directory");
+}
